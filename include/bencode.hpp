@@ -45,6 +45,15 @@ public:
             break;
         };
     }
+
+    BType getType() const {
+        return type;
+    };
+
+    int64_t asInt() const;
+    const std::string asStr() const;
+    const std::vector<BValue> asList() const;
+    const std::unordered_map<std::string, BValue> asDict() const;
 };
 
 class BenCodeDecoder {
@@ -53,7 +62,14 @@ private:
     std::size_t pos;
 
     char peek() const;
-    void consume(char ch) const;
+    char getChar() const;
+    void consume(char ch);
+    std::string readUntil(char delimeter);
+    int64_t readInt() const;
+    std::string readStr() const;
+    std::vector<BValue> readList() const;
+    std::unordered_map<std::string, BValue> readDict() const;
+    BValue decodeValue() const;
 
 public:
     BenCodeDecoder(const std::string &input) : content(input), pos(0) {};

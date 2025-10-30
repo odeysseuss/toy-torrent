@@ -33,7 +33,7 @@
 
 static const std::vector<std::string> srcs = {
     "../src/main.cpp",
-    // "../src/parser.cpp",
+    "../src/tcp.cpp",
 };
 
 int main(void) {
@@ -43,7 +43,7 @@ int main(void) {
     flags.append(CFLAGS);
 
     std::ostringstream cmd;
-    cmd << cc << " " << flags;
+    cmd << cc << " " << flags << " -I../include ";
     for (const auto &src : srcs) {
         cmd << " " << src;
     }

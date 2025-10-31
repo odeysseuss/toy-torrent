@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <memory>
 #include <unordered_map>
 
 enum class BType {
@@ -30,20 +29,29 @@ public:
     BValue(const std::vector<BValue> &val) : type(BType::LIST), BList(val) {};
     BValue(const std::unordered_map<std::string, BValue> &val) : type(BType::DICT), BDict(val) {};
 
-    ~BValue() {
+    // copy constructor
+    BValue(const BValue &other) : type(other.type) {
         switch (type) {
+        case BType::INTEGER:
+            BInt = other.BInt;
+            break;
         case BType::STRING:
-            BStr.~basic_string();
+            new (&BStr) std::string(other.BStr);
             break;
         case BType::LIST:
-            BList.~vector();
+            new (&BList) std::vector<BValue>(other.BList);
             break;
         case BType::DICT:
-            BDict.~unordered_map();
+            new (&BDict) std::unordered_map<std::string, BValue>(other.BDict);
             break;
-        default:
-            break;
-        };
+        }
+    }
+
+    BValue &operator=(const BValue &other);
+
+    void cleanup();
+    ~BValue() {
+        cleanup();
     }
 
     BType getType() const {
@@ -54,6 +62,8 @@ public:
     const std::string asStr() const;
     const std::vector<BValue> asList() const;
     const std::unordered_map<std::string, BValue> asDict() const;
+
+    std::string toString() const;
 };
 
 class BenCodeDecoder {
@@ -62,19 +72,19 @@ private:
     std::size_t pos;
 
     char peek() const;
-    char getChar() const;
+    char getChar();
     void consume(char ch);
     std::string readUntil(char delimeter);
-    int64_t readInt() const;
-    std::string readStr() const;
-    std::vector<BValue> readList() const;
-    std::unordered_map<std::string, BValue> readDict() const;
-    BValue decodeValue() const;
+    int64_t readInt();
+    std::string readStr();
+    std::vector<BValue> readList();
+    std::unordered_map<std::string, BValue> readDict();
+    BValue decodeValue();
 
 public:
     BenCodeDecoder(const std::string &input) : content(input), pos(0) {};
 
-    std::shared_ptr<BValue> decode();
+    BValue decode();
 };
 
 #endif

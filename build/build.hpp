@@ -22,7 +22,7 @@
 
 // === Compiler flags ===
 #if defined(COMPILER_CLANG) || defined(COMPILER_GCC)
-#    define COMMON_FLAGS "-Wall -Wextra -pedantic -pipe"
+#    define COMMON_FLAGS "-Wall -Wextra -pedantic"
 #    if defined(BUILD_RELEASE)
 #        define CFLAGS "-O2 -fstack-protector-strong -D_FORTIFY_SOURCE=2 -march=native"
 #        define LDFLAGS "-flto=auto", "-Wl,-z,relro", "-pie"

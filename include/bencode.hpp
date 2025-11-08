@@ -21,18 +21,26 @@ private:
         std::unordered_map<std::string, BenCodeVal> BenCodeDict;
     };
 
+    void copy(const BenCodeVal &other);
+    void move(BenCodeVal &&other);
     void cleanup();
 
 public:
     // constructors
     BenCodeVal();
     BenCodeVal(int64_t val);
-    BenCodeVal(const std::string val);
+    BenCodeVal(std::string val);
     BenCodeVal(std::vector<BenCodeVal> val);
     BenCodeVal(std::unordered_map<std::string, BenCodeVal> val);
 
+    // copy constructor
+    BenCodeVal(const BenCodeVal &other);
+    // move constructor
+    BenCodeVal(BenCodeVal &&other) noexcept;
+
     // assignment operators
     BenCodeVal &operator=(const BenCodeVal &other);
+    BenCodeVal &operator=(BenCodeVal &&other) noexcept;
 
     // destructor
     ~BenCodeVal();
@@ -41,6 +49,9 @@ public:
     BenCodeType getType() const {
         return type;
     }
+
+    // debug helpers
+    std::string toString() const;
 };
 
 class BenCodeDecoder {
@@ -60,11 +71,12 @@ private:
     std::vector<BenCodeVal> readList();
     std::unordered_map<std::string, BenCodeVal> readDict();
 
+    // decode helper
+    BenCodeVal decodeValue();
+
 public:
     // constructor
     BenCodeDecoder(const std::string &input);
-    // destructor
-    ~BenCodeDecoder();
 
     // core decoder method
     BenCodeVal decode();

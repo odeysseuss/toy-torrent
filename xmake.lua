@@ -10,5 +10,5 @@ end
 add_includedirs("include")
 add_files(
     "src/main.cpp",
-    "src/bencode.cpp",
+    "src/bencode.cpp"
 )

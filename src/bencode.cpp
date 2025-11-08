@@ -1,4 +1,7 @@
 #include "bencode.hpp"
+#include <stdexcept>
+
+// === Decoder values ===
 
 // constructors
 BenCodeVal::BenCodeVal() : type(BenCodeType::INTEGER), BenCodeInt(0) {};
@@ -56,4 +59,36 @@ void BenCodeVal::cleanup() {
 
 BenCodeVal::~BenCodeVal() {
     cleanup();
+}
+
+// === Decoder interface ===
+
+// helper functions
+char BenCodeDecoder::peek() const {
+    if (pos >= input.size())
+        return '\0';
+    return input[pos];
+}
+
+char BenCodeDecoder::getChar() {
+    if (pos >= input.size())
+        throw std::runtime_error("Unexpected end of input");
+    return input[pos++];
+}
+
+void BenCodeDecoder::consume(char ch) {
+    if (pos >= input.size() || input[pos] != ch)
+        throw std::runtime_error("Unexpected input");
+    pos++;
+}
+
+std::string BenCodeDecoder::readUntil(char delimeter) {
+    std::size_t start = pos;
+    while (pos < input.size() && input[pos] != delimeter) {
+        pos++;
+    }
+    if (pos >= input.size())
+        throw std::runtime_error("Unexpected end of input");
+
+    return input.substr(start, pos - start);
 }

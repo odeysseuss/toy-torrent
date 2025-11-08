@@ -42,3 +42,30 @@ public:
         return type;
     }
 };
+
+class BenCodeDecoder {
+private:
+    std::string input;
+    size_t pos;
+
+    // helper functions
+    char peek() const;
+    char getChar();
+    void consume(char ch);
+    std::string readUntil(char del);
+
+    // read input
+    int64_t readInt();
+    std::string readStr();
+    std::vector<BenCodeVal> readList();
+    std::unordered_map<std::string, BenCodeVal> readDict();
+
+public:
+    // constructor
+    BenCodeDecoder(const std::string &input);
+    // destructor
+    ~BenCodeDecoder();
+
+    // core decoder method
+    BenCodeVal decode();
+};

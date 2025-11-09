@@ -1,111 +1,65 @@
 #include "bencode.hpp"
 #include <stdexcept>
 
-// === Decoder values ===
+// === BenCodeVal Implementation ===
 
-// constructors
-BenCodeVal::BenCodeVal() : type(BenCodeType::INTEGER), BenCodeInt(0) {};
-BenCodeVal::BenCodeVal(int64_t val) : type(BenCodeType::INTEGER), BenCodeInt(val) {};
-BenCodeVal::BenCodeVal(std::string val) : type(BenCodeType::STRING) {
-    new (&BenCodeStr) std::string(std::move(val));
+// safe value access
+int64_t BenCodeVal::asInteger() const {
+    return std::get<int64_t>(data);
+}
+const std::string &BenCodeVal::asString() const {
+    return std::get<std::string>(data);
+}
+const std::vector<BenCodeVal> &BenCodeVal::asList() const {
+    return std::get<std::vector<BenCodeVal>>(data);
+}
+const std::unordered_map<std::string, BenCodeVal> &BenCodeVal::asDict() const {
+    return std::get<std::unordered_map<std::string, BenCodeVal>>(data);
 }
 
-BenCodeVal::BenCodeVal(std::vector<BenCodeVal> val) : type(BenCodeType::LIST) {
-    new (&BenCodeList) std::vector<BenCodeVal>(std::move(val));
+// for modification
+std::vector<BenCodeVal> &BenCodeVal::asList() {
+    return std::get<std::vector<BenCodeVal>>(data);
+}
+std::unordered_map<std::string, BenCodeVal> &BenCodeVal::asDict() {
+    return std::get<std::unordered_map<std::string, BenCodeVal>>(data);
 }
 
-BenCodeVal::BenCodeVal(std::unordered_map<std::string, BenCodeVal> val) : type(BenCodeType::DICT) {
-    new (&BenCodeDict) std::unordered_map<std::string, BenCodeVal>(std::move(val));
-}
-
-// copy constructor
-void BenCodeVal::copy(const BenCodeVal &other) {
-    type = other.type;
-    switch (type) {
+std::string BenCodeVal::toString() const {
+    switch (getType()) {
     case BenCodeType::INTEGER:
-        BenCodeInt = other.BenCodeInt;
-        break;
+        return std::to_string(asInteger());
     case BenCodeType::STRING:
-        new (&BenCodeStr) std::string(other.BenCodeStr);
-        break;
-    case BenCodeType::LIST:
-        new (&BenCodeList) std::vector<BenCodeVal>(other.BenCodeList);
-        break;
-    case BenCodeType::DICT:
-        new (&BenCodeDict) std::unordered_map<std::string, BenCodeVal>(other.BenCodeDict);
-        break;
+        return "\"" + asString() + "\"";
+    case BenCodeType::LIST: {
+        std::string result = "[";
+        const auto &list = asList();
+        for (size_t i = 0; i < list.size(); ++i) {
+            if (i > 0)
+                result += ", ";
+            result += list[i].toString();
+        }
+        result += "]";
+        return result;
     }
-}
-BenCodeVal::BenCodeVal(const BenCodeVal &other) {
-    copy(other);
-}
-
-// move constructor
-void BenCodeVal::move(BenCodeVal &&other) {
-    type = other.type;
-    switch (type) {
-    case BenCodeType::INTEGER:
-        BenCodeInt = other.BenCodeInt;
-        break;
-    case BenCodeType::STRING:
-        new (&BenCodeStr) std::string(std::move(other.BenCodeStr));
-        break;
-    case BenCodeType::LIST:
-        new (&BenCodeList) std::vector<BenCodeVal>(std::move(other.BenCodeList));
-        break;
-    case BenCodeType::DICT:
-        new (&BenCodeDict)
-            std::unordered_map<std::string, BenCodeVal>(std::move(other.BenCodeDict));
-        break;
+    case BenCodeType::DICT: {
+        std::string result = "{";
+        const auto &dict = asDict();
+        bool first = true;
+        for (const auto &pair : dict) {
+            if (!first)
+                result += ", ";
+            result += "\"" + pair.first + "\": " + pair.second.toString();
+            first = false;
+        }
+        result += "}";
+        return result;
     }
-}
-
-BenCodeVal::BenCodeVal(BenCodeVal &&other) noexcept {
-    move(std::move(other));
-}
-
-// assignment operators
-BenCodeVal &BenCodeVal::operator=(const BenCodeVal &other) {
-    if (this != &other) {
-        cleanup();
-        copy(other);
     }
-    return *this;
+    return "unknown";
 }
 
-BenCodeVal &BenCodeVal::operator=(BenCodeVal &&other) noexcept {
-    if (this != &other) {
-        cleanup();
-        move(std::move(other));
-    }
-    return *this;
-}
-
-// destructor
-void BenCodeVal::cleanup() {
-    switch (type) {
-    case BenCodeType::INTEGER:
-        break;
-    case BenCodeType::STRING:
-        BenCodeStr.~basic_string();
-        break;
-    case BenCodeType::LIST:
-        BenCodeList.~vector();
-        break;
-    case BenCodeType::DICT:
-        BenCodeDict.~unordered_map();
-        break;
-    }
-}
-
-BenCodeVal::~BenCodeVal() {
-    cleanup();
-}
-
-// === Decoder interface ===
-
-// constructor
-BenCodeDecoder::BenCodeDecoder(const std::string &input) : input(input), pos(0) {};
+// === BenCodeDecoder Implementation ===
 
 // helper functions
 char BenCodeDecoder::peek() const {
@@ -197,6 +151,7 @@ std::unordered_map<std::string, BenCodeVal> BenCodeDecoder::readDict() {
     return dict;
 }
 
+// decode input
 BenCodeVal BenCodeDecoder::decodeValue() {
     char ch = peek();
 
@@ -224,37 +179,4 @@ BenCodeVal BenCodeDecoder::decode() {
     }
 
     return res;
-}
-
-// debug helpers
-std::string BenCodeVal::toString() const {
-    switch (type) {
-    case BenCodeType::INTEGER:
-        return std::to_string(BenCodeInt);
-    case BenCodeType::STRING:
-        return "\"" + BenCodeStr + "\"";
-    case BenCodeType::LIST: {
-        std::string result = "[";
-        for (size_t i = 0; i < BenCodeList.size(); ++i) {
-            if (i > 0)
-                result += ", ";
-            result += BenCodeList[i].toString();
-        }
-        result += "]";
-        return result;
-    }
-    case BenCodeType::DICT: {
-        std::string result = "{";
-        bool first = true;
-        for (const auto &pair : BenCodeDict) {
-            if (!first)
-                result += ", ";
-            result += "\"" + pair.first + "\": " + pair.second.toString();
-            first = false;
-        }
-        result += "}";
-        return result;
-    }
-    }
-    return "unknown";
 }

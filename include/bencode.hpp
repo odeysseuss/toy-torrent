@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 enum class BenCodeType {
@@ -13,42 +14,34 @@ enum class BenCodeType {
 
 class BenCodeVal {
 private:
-    BenCodeType type;
-    union {
-        int64_t BenCodeInt;
-        std::string BenCodeStr;
-        std::vector<BenCodeVal> BenCodeList;
-        std::unordered_map<std::string, BenCodeVal> BenCodeDict;
-    };
-
-    void copy(const BenCodeVal &other);
-    void move(BenCodeVal &&other);
-    void cleanup();
+    std::variant<int64_t,
+                 std::string,
+                 std::vector<BenCodeVal>,
+                 std::unordered_map<std::string, BenCodeVal>>
+        data;
 
 public:
     // constructors
-    BenCodeVal();
-    BenCodeVal(int64_t val);
-    BenCodeVal(std::string val);
-    BenCodeVal(std::vector<BenCodeVal> val);
-    BenCodeVal(std::unordered_map<std::string, BenCodeVal> val);
-
-    // copy constructor
-    BenCodeVal(const BenCodeVal &other);
-    // move constructor
-    BenCodeVal(BenCodeVal &&other) noexcept;
-
-    // assignment operators
-    BenCodeVal &operator=(const BenCodeVal &other);
-    BenCodeVal &operator=(BenCodeVal &&other) noexcept;
-
-    // destructor
-    ~BenCodeVal();
+    BenCodeVal() : data(int64_t(0)) {};
+    BenCodeVal(int64_t val) : data(val) {};
+    BenCodeVal(std::string val) : data(std::move(val)) {};
+    BenCodeVal(std::vector<BenCodeVal> val) : data(std::move(val)) {};
+    BenCodeVal(std::unordered_map<std::string, BenCodeVal> val) : data(std::move(val)) {};
 
     // helper methods to check type
     BenCodeType getType() const {
-        return type;
+        return static_cast<BenCodeType>(data.index());
     }
+
+    // safe value access
+    int64_t asInteger() const;
+    const std::string &asString() const;
+    const std::vector<BenCodeVal> &asList() const;
+    const std::unordered_map<std::string, BenCodeVal> &asDict() const;
+
+    // for modification
+    std::vector<BenCodeVal> &asList();
+    std::unordered_map<std::string, BenCodeVal> &asDict();
 
     // debug helpers
     std::string toString() const;
@@ -76,7 +69,7 @@ private:
 
 public:
     // constructor
-    BenCodeDecoder(const std::string &input);
+    BenCodeDecoder(const std::string &input) : input(input), pos(0) {};
 
     // core decoder method
     BenCodeVal decode();

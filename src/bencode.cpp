@@ -1,37 +1,37 @@
 #include "bencode.hpp"
 #include <stdexcept>
 
-// === BenCodeVal Implementation ===
+// === BVal Implementation ===
 
 // safe value access
-int64_t BenCodeVal::asInteger() const {
+int64_t BVal::asInteger() const {
     return std::get<int64_t>(data);
 }
-const std::string &BenCodeVal::asString() const {
+const std::string &BVal::asString() const {
     return std::get<std::string>(data);
 }
-const std::vector<BenCodeVal> &BenCodeVal::asList() const {
-    return std::get<std::vector<BenCodeVal>>(data);
+const std::vector<BVal> &BVal::asList() const {
+    return std::get<std::vector<BVal>>(data);
 }
-const std::unordered_map<std::string, BenCodeVal> &BenCodeVal::asDict() const {
-    return std::get<std::unordered_map<std::string, BenCodeVal>>(data);
+const std::unordered_map<std::string, BVal> &BVal::asDict() const {
+    return std::get<std::unordered_map<std::string, BVal>>(data);
 }
 
 // for modification
-std::vector<BenCodeVal> &BenCodeVal::asList() {
-    return std::get<std::vector<BenCodeVal>>(data);
+std::vector<BVal> &BVal::asList() {
+    return std::get<std::vector<BVal>>(data);
 }
-std::unordered_map<std::string, BenCodeVal> &BenCodeVal::asDict() {
-    return std::get<std::unordered_map<std::string, BenCodeVal>>(data);
+std::unordered_map<std::string, BVal> &BVal::asDict() {
+    return std::get<std::unordered_map<std::string, BVal>>(data);
 }
 
-std::string BenCodeVal::toString() const {
+std::string BVal::toString() const {
     switch (getType()) {
-    case BenCodeType::INTEGER:
+    case BType::INTEGER:
         return std::to_string(asInteger());
-    case BenCodeType::STRING:
+    case BType::STRING:
         return "\"" + asString() + "\"";
-    case BenCodeType::LIST: {
+    case BType::LIST: {
         std::string result = "[";
         const auto &list = asList();
         for (size_t i = 0; i < list.size(); ++i) {
@@ -42,7 +42,7 @@ std::string BenCodeVal::toString() const {
         result += "]";
         return result;
     }
-    case BenCodeType::DICT: {
+    case BType::DICT: {
         std::string result = "{";
         const auto &dict = asDict();
         bool first = true;
@@ -59,28 +59,28 @@ std::string BenCodeVal::toString() const {
     return "unknown";
 }
 
-// === BenCodeDecoder Implementation ===
+// === BDecode Implementation ===
 
 // helper functions
-char BenCodeDecoder::peek() const {
+char BDecode::peek() const {
     if (pos >= input.size())
         return '\0';
     return input[pos];
 }
 
-char BenCodeDecoder::getChar() {
+char BDecode::getChar() {
     if (pos >= input.size())
         throw std::runtime_error("Unexpected end of input");
     return input[pos++];
 }
 
-void BenCodeDecoder::consume(char ch) {
+void BDecode::consume(char ch) {
     if (pos >= input.size() || input[pos] != ch)
         throw std::runtime_error("Unexpected input");
     pos++;
 }
 
-std::string BenCodeDecoder::readUntil(char delimeter) {
+std::string BDecode::readUntil(char delimeter) {
     std::size_t start = pos;
     while (pos < input.size() && input[pos] != delimeter) {
         pos++;
@@ -92,7 +92,7 @@ std::string BenCodeDecoder::readUntil(char delimeter) {
 }
 
 // read input
-int64_t BenCodeDecoder::readInt() {
+int64_t BDecode::readInt() {
     consume('i');
     std::string numStr = readUntil('e');
     consume('e');
@@ -104,7 +104,7 @@ int64_t BenCodeDecoder::readInt() {
     }
 }
 
-std::string BenCodeDecoder::readStr() {
+std::string BDecode::readStr() {
     std::size_t length;
     std::string lengthStr = readUntil(':');
 
@@ -125,9 +125,9 @@ std::string BenCodeDecoder::readStr() {
     return res;
 }
 
-std::vector<BenCodeVal> BenCodeDecoder::readList() {
+std::vector<BVal> BDecode::readList() {
     consume('l');
-    std::vector<BenCodeVal> list;
+    std::vector<BVal> list;
 
     while (peek() != 'e') {
         list.push_back(decodeValue());
@@ -137,13 +137,13 @@ std::vector<BenCodeVal> BenCodeDecoder::readList() {
     return list;
 }
 
-std::unordered_map<std::string, BenCodeVal> BenCodeDecoder::readDict() {
+std::unordered_map<std::string, BVal> BDecode::readDict() {
     consume('d');
-    std::unordered_map<std::string, BenCodeVal> dict;
+    std::unordered_map<std::string, BVal> dict;
 
     while (peek() != 'e') {
         std::string key = readStr();
-        BenCodeVal val = decodeValue();
+        BVal val = decodeValue();
         dict.emplace(std::move(key), std::move(val));
     }
 
@@ -152,19 +152,19 @@ std::unordered_map<std::string, BenCodeVal> BenCodeDecoder::readDict() {
 }
 
 // decode input
-BenCodeVal BenCodeDecoder::decodeValue() {
+BVal BDecode::decodeValue() {
     char ch = peek();
 
     switch (ch) {
     case 'i':
-        return BenCodeVal(readInt());
+        return BVal(readInt());
     case 'l':
-        return BenCodeVal(readList());
+        return BVal(readList());
     case 'd':
-        return BenCodeVal(readDict());
+        return BVal(readDict());
     default:
         if (isdigit(ch)) {
-            return BenCodeVal(readStr());
+            return BVal(readStr());
         } else {
             throw std::runtime_error("Unexpected char in bencode String");
         }
@@ -172,8 +172,8 @@ BenCodeVal BenCodeDecoder::decodeValue() {
 }
 
 // core decoder method
-BenCodeVal BenCodeDecoder::decode() {
-    BenCodeVal res = decodeValue();
+BVal BDecode::decode() {
+    BVal res = decodeValue();
     if (pos != input.size()) {
         throw std::runtime_error("Extra data after bencoded value");
     }

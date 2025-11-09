@@ -5,49 +5,46 @@
 #include <variant>
 #include <vector>
 
-enum class BenCodeType {
+enum class BType {
     INTEGER,
     STRING,
     LIST,
     DICT,
 };
 
-class BenCodeVal {
+class BVal {
 private:
-    std::variant<int64_t,
-                 std::string,
-                 std::vector<BenCodeVal>,
-                 std::unordered_map<std::string, BenCodeVal>>
+    std::variant<int64_t, std::string, std::vector<BVal>, std::unordered_map<std::string, BVal>>
         data;
 
 public:
     // constructors
-    BenCodeVal() : data(int64_t(0)) {};
-    BenCodeVal(int64_t val) : data(val) {};
-    BenCodeVal(std::string val) : data(std::move(val)) {};
-    BenCodeVal(std::vector<BenCodeVal> val) : data(std::move(val)) {};
-    BenCodeVal(std::unordered_map<std::string, BenCodeVal> val) : data(std::move(val)) {};
+    BVal() : data(int64_t(0)) {};
+    BVal(int64_t val) : data(val) {};
+    BVal(std::string val) : data(std::move(val)) {};
+    BVal(std::vector<BVal> val) : data(std::move(val)) {};
+    BVal(std::unordered_map<std::string, BVal> val) : data(std::move(val)) {};
 
     // helper methods to check type
-    BenCodeType getType() const {
-        return static_cast<BenCodeType>(data.index());
+    BType getType() const {
+        return static_cast<BType>(data.index());
     }
 
     // safe value access
     int64_t asInteger() const;
     const std::string &asString() const;
-    const std::vector<BenCodeVal> &asList() const;
-    const std::unordered_map<std::string, BenCodeVal> &asDict() const;
+    const std::vector<BVal> &asList() const;
+    const std::unordered_map<std::string, BVal> &asDict() const;
 
     // for modification
-    std::vector<BenCodeVal> &asList();
-    std::unordered_map<std::string, BenCodeVal> &asDict();
+    std::vector<BVal> &asList();
+    std::unordered_map<std::string, BVal> &asDict();
 
     // debug helpers
     std::string toString() const;
 };
 
-class BenCodeDecoder {
+class BDecode {
 private:
     std::string input;
     size_t pos;
@@ -61,16 +58,16 @@ private:
     // read input
     int64_t readInt();
     std::string readStr();
-    std::vector<BenCodeVal> readList();
-    std::unordered_map<std::string, BenCodeVal> readDict();
+    std::vector<BVal> readList();
+    std::unordered_map<std::string, BVal> readDict();
 
     // decode helper
-    BenCodeVal decodeValue();
+    BVal decodeValue();
 
 public:
     // constructor
-    BenCodeDecoder(const std::string &input) : input(input), pos(0) {};
+    BDecode(const std::string &input) : input(input), pos(0) {};
 
     // core decoder method
-    BenCodeVal decode();
+    BVal decode();
 };

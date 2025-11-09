@@ -3,28 +3,52 @@
 
 int main() {
     try {
-        // integer
-        BDecode decoder1("i42e");
+        // Test 1: Integer
+        std::string init_val = "i42e";
+        BDecode decoder1(init_val);
         BVal result1 = decoder1.decode();
-        std::cout << "Integer: " << result1.toString() << std::endl;
+        BEncode encoder1;
+        std::string encoded1 = encoder1.encode(result1);
 
-        // string
-        BDecode decoder2("4:spam");
+        std::cout << "Initial Integer: " << init_val << "\n"
+                  << "Decoded Integer: " << result1.toString() << "\n"
+                  << "Encoded Integer: " << encoded1 << "\n\n";
+
+        // Test 2: String
+        init_val = "4:spam";
+        BDecode decoder2(init_val);
         BVal result2 = decoder2.decode();
-        std::cout << "String: " << result2.toString() << std::endl;
+        BEncode encoder2;
+        std::string encoded2 = encoder2.encode(result2);
 
-        // list
-        BDecode decoder3("li1ei2e3:fooe");
+        std::cout << "Initial String: " << init_val << "\n"
+                  << "Decoded String: " << result2.toString() << "\n"
+                  << "Encoded String: " << encoded2 << "\n\n";
+
+        // Test 3: List
+        init_val = "li1ei2e3:fooe";
+        BDecode decoder3(init_val);
         BVal result3 = decoder3.decode();
-        std::cout << "List: " << result3.toString() << std::endl;
+        BEncode encoder3;
+        std::string encoded3 = encoder3.encode(result3);
 
-        // dictionary
-        BDecode decoder4("d3:bar4:spam3:fooi42ee");
+        std::cout << "Initial List: " << init_val << "\n"
+                  << "Decoded List: " << result3.toString() << "\n"
+                  << "Encoded List: " << encoded3 << "\n\n";
+
+        // Test 4: Dictionary
+        init_val = "d3:bar4:spam3:fooi42ee";
+        BDecode decoder4(init_val);
         BVal result4 = decoder4.decode();
-        std::cout << "Dict: " << result4.toString() << std::endl;
+        BEncode encoder4;
+        std::string encoded4 = encoder4.encode(result4);
 
+        std::cout << "Initial Dict: " << init_val << "\n"
+                  << "Decoded Dict: " << result4.toString() << "\n"
+                  << "Encoded Dict: " << encoded4 << "\n";
     } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << "\n";
+        return 1;
     }
 
     return 0;

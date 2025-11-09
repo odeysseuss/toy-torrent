@@ -71,3 +71,16 @@ public:
     // core decoder method
     BVal decode();
 };
+
+class BEncode {
+private:
+    // helper functions for different types
+    std::string encodeInteger(int64_t value);
+    std::string encodeString(const std::string &value);
+    std::string encodeList(const std::vector<BVal> &list);
+    std::string encodeDict(const std::unordered_map<std::string, BVal> &dict);
+
+public:
+    // core encoder method
+    std::string encode(const BVal &value);
+};

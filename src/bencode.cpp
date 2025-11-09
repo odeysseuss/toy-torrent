@@ -1,4 +1,5 @@
 #include "bencode.hpp"
+#include <algorithm>
 #include <stdexcept>
 
 // === BVal Implementation ===
@@ -179,4 +180,58 @@ BVal BDecode::decode() {
     }
 
     return res;
+}
+
+// === BEncoder Implementation ===
+
+std::string BEncode::encodeInteger(int64_t value) {
+    return "i" + std::to_string(value) + "e";
+}
+
+std::string BEncode::encodeString(const std::string &value) {
+    return std::to_string(value.length()) + ":" + value;
+}
+
+std::string BEncode::encodeList(const std::vector<BVal> &list) {
+    std::string result = "l";
+    for (const auto &item : list) {
+        result += encode(item);
+    }
+    result += "e";
+    return result;
+}
+
+std::string BEncode::encodeDict(const std::unordered_map<std::string, BVal> &dict) {
+    std::string result = "d";
+
+    // Bencode requires dictionary keys to be in lexicographical order
+    std::vector<std::string> keys;
+    keys.reserve(dict.size());
+    for (const auto &pair : dict) {
+        keys.push_back(pair.first);
+    }
+    std::sort(keys.begin(), keys.end());
+
+    for (const auto &key : keys) {
+        result += encodeString(key);
+        result += encode(dict.at(key));
+    }
+
+    result += "e";
+    return result;
+}
+
+std::string BEncode::encode(const BVal &value) {
+    switch (value.getType()) {
+    case BType::INTEGER:
+        return encodeInteger(value.asInteger());
+    case BType::STRING:
+        return encodeString(value.asString());
+    case BType::LIST:
+        return encodeList(value.asList());
+    case BType::DICT:
+        return encodeDict(value.asDict());
+    default:
+        throw std::runtime_error("Unknown BType for encoding");
+    }
 }

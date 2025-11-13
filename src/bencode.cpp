@@ -2,38 +2,40 @@
 #include <algorithm>
 #include <stdexcept>
 
+using std::exception;
+
 // === BVal Implementation ===
 
 // safe value access
 int64_t BVal::asInteger() const {
     return std::get<int64_t>(data);
 }
-const std::string &BVal::asString() const {
-    return std::get<std::string>(data);
+const string &BVal::asString() const {
+    return std::get<string>(data);
 }
-const std::vector<BVal> &BVal::asList() const {
-    return std::get<std::vector<BVal>>(data);
+const vector<BVal> &BVal::asList() const {
+    return std::get<vector<BVal>>(data);
 }
-const std::unordered_map<std::string, BVal> &BVal::asDict() const {
-    return std::get<std::unordered_map<std::string, BVal>>(data);
+const unordered_map<string, BVal> &BVal::asDict() const {
+    return std::get<unordered_map<string, BVal>>(data);
 }
 
 // for modification
-std::vector<BVal> &BVal::asList() {
-    return std::get<std::vector<BVal>>(data);
+vector<BVal> &BVal::asList() {
+    return std::get<vector<BVal>>(data);
 }
-std::unordered_map<std::string, BVal> &BVal::asDict() {
-    return std::get<std::unordered_map<std::string, BVal>>(data);
+unordered_map<string, BVal> &BVal::asDict() {
+    return std::get<unordered_map<string, BVal>>(data);
 }
 
-std::string BVal::toString() const {
+string BVal::toString() const {
     switch (getType()) {
     case BType::INTEGER:
         return std::to_string(asInteger());
     case BType::STRING:
         return "\"" + asString() + "\"";
     case BType::LIST: {
-        std::string result = "[";
+        string result = "[";
         const auto &list = asList();
         for (size_t i = 0; i < list.size(); ++i) {
             if (i > 0)
@@ -44,7 +46,7 @@ std::string BVal::toString() const {
         return result;
     }
     case BType::DICT: {
-        std::string result = "{";
+        string result = "{";
         const auto &dict = asDict();
         bool first = true;
         for (const auto &pair : dict) {
@@ -81,7 +83,7 @@ void BDecode::consume(char ch) {
     pos++;
 }
 
-std::string BDecode::readUntil(char delimeter) {
+string BDecode::readUntil(char delimeter) {
     std::size_t start = pos;
     while (pos < input.size() && input[pos] != delimeter) {
         pos++;
@@ -95,23 +97,23 @@ std::string BDecode::readUntil(char delimeter) {
 // read input
 int64_t BDecode::readInt() {
     consume('i');
-    std::string numStr = readUntil('e');
+    string numStr = readUntil('e');
     consume('e');
 
     try {
         return std::stoll(numStr);
-    } catch (const std::exception &e) {
+    } catch (const exception &e) {
         throw std::runtime_error("Invalid Integer format");
     }
 }
 
-std::string BDecode::readStr() {
+string BDecode::readStr() {
     std::size_t length;
-    std::string lengthStr = readUntil(':');
+    string lengthStr = readUntil(':');
 
     try {
         length = std::stoul(lengthStr);
-    } catch (const std::exception &e) {
+    } catch (const exception &e) {
         throw std::runtime_error("Invalid String format");
     }
 
@@ -121,14 +123,14 @@ std::string BDecode::readStr() {
         throw std::runtime_error("Unexpected end of input");
     }
 
-    std::string res = input.substr(pos, length);
+    string res = input.substr(pos, length);
     pos += length;
     return res;
 }
 
-std::vector<BVal> BDecode::readList() {
+vector<BVal> BDecode::readList() {
     consume('l');
-    std::vector<BVal> list;
+    vector<BVal> list;
 
     while (peek() != 'e') {
         list.push_back(decodeValue());
@@ -138,12 +140,12 @@ std::vector<BVal> BDecode::readList() {
     return list;
 }
 
-std::unordered_map<std::string, BVal> BDecode::readDict() {
+unordered_map<string, BVal> BDecode::readDict() {
     consume('d');
-    std::unordered_map<std::string, BVal> dict;
+    unordered_map<string, BVal> dict;
 
     while (peek() != 'e') {
-        std::string key = readStr();
+        string key = readStr();
         BVal val = decodeValue();
         dict.emplace(std::move(key), std::move(val));
     }
@@ -184,16 +186,16 @@ BVal BDecode::decode() {
 
 // === BEncoder Implementation ===
 
-std::string BEncode::encodeInteger(int64_t value) {
+string BEncode::encodeInteger(int64_t value) {
     return "i" + std::to_string(value) + "e";
 }
 
-std::string BEncode::encodeString(const std::string &value) {
+string BEncode::encodeString(const string &value) {
     return std::to_string(value.length()) + ":" + value;
 }
 
-std::string BEncode::encodeList(const std::vector<BVal> &list) {
-    std::string result = "l";
+string BEncode::encodeList(const vector<BVal> &list) {
+    string result = "l";
     for (const auto &item : list) {
         result += encode(item);
     }
@@ -201,11 +203,11 @@ std::string BEncode::encodeList(const std::vector<BVal> &list) {
     return result;
 }
 
-std::string BEncode::encodeDict(const std::unordered_map<std::string, BVal> &dict) {
-    std::string result = "d";
+string BEncode::encodeDict(const unordered_map<string, BVal> &dict) {
+    string result = "d";
 
     // Bencode requires dictionary keys to be in lexicographical order
-    std::vector<std::string> keys;
+    vector<string> keys;
     keys.reserve(dict.size());
     for (const auto &pair : dict) {
         keys.push_back(pair.first);
@@ -221,7 +223,7 @@ std::string BEncode::encodeDict(const std::unordered_map<std::string, BVal> &dic
     return result;
 }
 
-std::string BEncode::encode(const BVal &value) {
+string BEncode::encode(const BVal &value) {
     switch (value.getType()) {
     case BType::INTEGER:
         return encodeInteger(value.asInteger());

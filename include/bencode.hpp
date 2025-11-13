@@ -5,6 +5,8 @@
 #include <variant>
 #include <vector>
 
+using std::string, std::vector, std::unordered_map, std::variant;
+
 enum class BType {
     INTEGER,
     STRING,
@@ -14,16 +16,15 @@ enum class BType {
 
 class BVal {
 private:
-    std::variant<int64_t, std::string, std::vector<BVal>, std::unordered_map<std::string, BVal>>
-        data;
+    variant<int64_t, string, vector<BVal>, unordered_map<string, BVal>> data;
 
 public:
     // constructors
     BVal() : data(int64_t(0)) {};
     BVal(int64_t val) : data(val) {};
-    BVal(std::string val) : data(std::move(val)) {};
-    BVal(std::vector<BVal> val) : data(std::move(val)) {};
-    BVal(std::unordered_map<std::string, BVal> val) : data(std::move(val)) {};
+    BVal(string val) : data(std::move(val)) {};
+    BVal(vector<BVal> val) : data(std::move(val)) {};
+    BVal(unordered_map<string, BVal> val) : data(std::move(val)) {};
 
     // helper methods to check type
     BType getType() const {
@@ -32,41 +33,41 @@ public:
 
     // safe value access
     int64_t asInteger() const;
-    const std::string &asString() const;
-    const std::vector<BVal> &asList() const;
-    const std::unordered_map<std::string, BVal> &asDict() const;
+    const string &asString() const;
+    const vector<BVal> &asList() const;
+    const unordered_map<string, BVal> &asDict() const;
 
     // for modification
-    std::vector<BVal> &asList();
-    std::unordered_map<std::string, BVal> &asDict();
+    vector<BVal> &asList();
+    unordered_map<string, BVal> &asDict();
 
     // debug helpers
-    std::string toString() const;
+    string toString() const;
 };
 
 class BDecode {
 private:
-    std::string input;
+    string input;
     size_t pos;
 
     // helper functions
     char peek() const;
     char getChar();
     void consume(char ch);
-    std::string readUntil(char del);
+    string readUntil(char del);
 
     // read input
     int64_t readInt();
-    std::string readStr();
-    std::vector<BVal> readList();
-    std::unordered_map<std::string, BVal> readDict();
+    string readStr();
+    vector<BVal> readList();
+    unordered_map<string, BVal> readDict();
 
     // decode helper
     BVal decodeValue();
 
 public:
     // constructor
-    BDecode(const std::string &input) : input(input), pos(0) {};
+    BDecode(const string &input) : input(input), pos(0) {};
 
     // core decoder method
     BVal decode();
@@ -75,12 +76,12 @@ public:
 class BEncode {
 private:
     // helper functions for different types
-    std::string encodeInteger(int64_t value);
-    std::string encodeString(const std::string &value);
-    std::string encodeList(const std::vector<BVal> &list);
-    std::string encodeDict(const std::unordered_map<std::string, BVal> &dict);
+    string encodeInteger(int64_t value);
+    string encodeString(const string &value);
+    string encodeList(const vector<BVal> &list);
+    string encodeDict(const unordered_map<string, BVal> &dict);
 
 public:
     // core encoder method
-    std::string encode(const BVal &value);
+    string encode(const BVal &value);
 };
